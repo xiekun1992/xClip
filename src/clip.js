@@ -7,6 +7,9 @@
 		this.pre2Edge = 64;
 
 		this.container = document.querySelector(options.container);
+		this.options = {
+			img: options.img
+		}
 	}
 	Clip.prototype.init = function(){
 		this.initDom();
@@ -32,7 +35,7 @@
 		
 		this.img = new Image();
 		this.imgMinEdge = 0;
-		this.img.src = "shu.jpg";
+		this.img.src = this.options.img;
 		this.img.onload = function(){
 			if(this.img.width > this.img.height){
 				// 只能横向移动
@@ -160,7 +163,7 @@
 	Clip.prototype.draw = function(ctx, clip, width, height){
 		ctx.clearRect(0, 0, width, height);
 		if(clip){
-			ctx.drawImage(this.img, Math.abs(this.mainCanvas.offsetLeft) / this.mainScale, 0, this.imgMinEdge, this.imgMinEdge, 0, 0, width, height);
+			ctx.drawImage(this.img, Math.abs(this.mainCanvas.offsetLeft) / this.mainScale, Math.abs(this.mainCanvas.offsetTop) / this.mainScale, this.imgMinEdge, this.imgMinEdge, 0, 0, width, height);
 		}else{
 			ctx.drawImage(this.img, 0, 0);
 		}
