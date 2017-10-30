@@ -32,7 +32,7 @@
 		
 		this.img = new Image();
 		this.imgMinEdge = 0;
-		this.img.src = "t01a17d0ff529c90919.jpg";
+		this.img.src = "shu.jpg";
 		this.img.onload = function(){
 			if(this.img.width > this.img.height){
 				// 只能横向移动
@@ -99,7 +99,7 @@
 	};
 	Clip.prototype.initEvent = function(){
 		// 绑定鼠标和触屏事件
-		var isMoving = false, moveDirection = null, pos = {x: 0, y: 0}, originPos = {x: this.mainCanvas.offsetLeft, y: this.mainCanvas.offsetTop};
+		var isMoving = false, pos = {x: 0, y: 0}, originPos = {x: this.mainCanvas.offsetLeft, y: this.mainCanvas.offsetTop};
 		this.mainDom.addEventListener('mousedown', function(e){
 			isMoving = true;
 			pos.x = e.pageX;
@@ -107,7 +107,7 @@
 		}.bind(this));
 		this.mainDom.addEventListener('mousemove', function(e){
 			if(isMoving){
-				if(!moveDirection){
+				if(!this.moveDirection){
 					var left = e.pageX - pos.x + originPos.x;
 					if(left >= 0){
 						left = 0;
@@ -187,7 +187,6 @@
 
 		return this;
 	};
-
 	Clip.prototype.cut = function(isRect){
 		var imgData = this.mainCtx.getImageData(Math.abs(this.mainCanvas.offsetLeft), 0, this.frameEdge, this.frameEdge);
 		var canvas = document.createElement('canvas');
@@ -199,6 +198,6 @@
 		}
 		return canvas.toDataURL();
 	};
-
+	// Clip.prototype.
 	return Clip;
 });
