@@ -6,31 +6,23 @@
 	<style>
 		.x-clip>.main, .x-clip>.preview{
 			position: relative;
-			/*float: left;*/
 		}
+		.x-clip>div{float: left;}
 		.x-clip>.main{
-			width: 300px;
-		    height: 300px;
 		    overflow: hidden;
-		}
-		.x-clip>div{
-			float: left;
 		}
 		.x-clip>.preview{
 			margin-left: 20px;
 			text-align: center;
 		}
-		.x-clip>.preview>div{
-			text-align: center;
-		}
-		#overlay{
+		.x-clip>.main>.overlay{
 			position: absolute;
 			top: 0;
 			left: 0;
 			z-index: 10;
 			pointer-events: none;
 		}
-		#c{
+		.x-clip>.main>.main-canvas{
 			position: absolute;
 		}
 		.x-clip>.preview>canvas{
@@ -40,156 +32,18 @@
 		}
 	</style>
 </head>
-<body class="x-clip">
-	<div class="main">
-		<canvas id="overlay"></canvas>
-		<canvas id="c"></canvas>
-	</div>
-	<div class="preview">
-		<canvas id="preview1" width="128" height="128"></canvas>
-		<canvas id="preview2" width="64" height="64"></canvas>
-	</div>
+<body id="clip">
 	<button onclick="cut(1)">clip rect</button>
 	<button onclick="cut()">clip arc</button>
+	<script src="src/clip.js"></script>
 	<script>
-		var frameEdge = 300, pre1Edge = 128, pre2Edge = 64;
-
-		var isMoving = false, moveDirection = null, pos = {x: 0, y: 0}, originPos = {x: c.offsetLeft, y: c.offsetTop};
-		c.addEventListener('mousedown', function(e){
-			isMoving = true;
-			pos.x = e.pageX;
-			pos.y = e.pageY;
-		});
-		c.addEventListener('mousemove', function(e){
-			if(isMoving){
-				if(!moveDirection){
-					var left = e.pageX - pos.x + originPos.x;
-					if(left >= 0){
-						left = 0;
-					}else if(Math.abs(left) + frameEdge >= img.width * scale){
-						left = -(img.width * scale - frameEdge);
-					}
-					c.style.left = left + 'px';
-				}else{
-					var top = e.pageY - pos.y + originPos.y;
-					if(top >= 0){
-						top = 0;
-					}else if(Math.abs(top) + frameEdge >= img.height * scale){
-						top = -(img.height * scale - frameEdge);
-					}
-					c.style.top = top + 'px';
-				}
-				drawPreview();
-			}
-		});
-		c.addEventListener('mouseup', function(e){
-			isMoving = false;
-			originPos = {x: c.offsetLeft, y: c.offsetTop};
-		});
-		c.addEventListener('mouseout', function(e){
-			isMoving = false;
-			originPos = {x: c.offsetLeft, y: c.offsetTop};
-		});
-		// c.addEventListener('mousewheel', function(e){
-		// 	console.log(e.wheelDelta)
-		// 	// 向上滚，放大
-		// 	if(e.wheelDelta > 0){
-		// 		if(tmpScale < 1){
-		// 			tmpScale = tmpScale * 1.4;
-		// 			if(tmpScale > 1){
-		// 				// tmpScale = 1;
-		// 			}
-		// 		}
-		// 	}else{
-		// 		if(tmpScale > scale){
-		// 			tmpScale = tmpScale / 1.4;
-		// 			if(tmpScale < scale){
-		// 				// tmpScale = scale;
-		// 			}
-		// 		}
-		// 	}
-		// 	console.log(tmpScale)
-		// 	draw(tmpScale);
-		// });
-		// 遮罩层
-		overlay.height = overlay.width = frameEdge;
-		var octx = overlay.getContext('2d');
-		octx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-		octx.fillRect(0, 0, overlay.width, overlay.height);
-		octx.globalCompositeOperation = 'destination-out';
-		octx.arc(overlay.width / 2, overlay.width / 2, overlay.width / 2, 0, 2 * Math.PI);
-		octx.fillStyle = '#ffffff';
-		octx.fill();
-
-
-		var ctx = c.getContext('2d'), pre1Ctx = preview1.getContext('2d'), pre2Ctx = preview2.getContext('2d');
-		var scale = 1, tmpScale;
-		var pre1Scale = 1, pre2Scale = 1;
-		
-		var img = new Image(), imgMinEdge = 0;
-		img.src = "t01a17d0ff529c90919.jpg";
-		img.onload = function(){
-			if(img.width > img.height){
-				// 只能横向移动
-				moveDirection = 0;
-				imgMinEdge = img.height;
-				scale = tmpScale = frameEdge / img.height;
-			}else{
-				// 只能竖向移动
-				moveDirection = 1;
-				imgMinEdge = img.width;
-				scale = tmpScale = frameEdge / img.width;
-			}
-			pre1Scale = pre1Edge / imgMinEdge;
-			pre2Scale = pre2Edge / imgMinEdge;
-
-			c.width = img.width;
-			c.height = img.height;
-
-			ctx.scale(scale, scale);
-			pre1Ctx.scale(pre1Scale, pre1Scale);
-			pre2Ctx.scale(pre2Scale, pre2Scale);
-
-			draw(ctx);	
-			drawPreview();
-		};
-		function draw(ctx, clip, width, height){
-			ctx.clearRect(0, 0, c.width, c.height);
-			if(clip){
-				ctx.drawImage(img, Math.abs(c.offsetLeft) / scale, 0, img.height, img.height, 0, 0, width, height);
-			}else{
-				ctx.drawImage(img, 0, 0);
-			}
-		}
-		function drawPreview(){
-			var pre1SacleEdge = pre1Edge / pre1Scale, pre2SacleEdge = pre2Edge / pre2Scale;
-			draw(pre1Ctx, true, pre1SacleEdge, pre1SacleEdge);
-			draw(pre2Ctx, true, pre2SacleEdge, pre2SacleEdge);
-
-			drawOverlay(pre1Ctx, pre1SacleEdge/2, pre1SacleEdge/2, pre1SacleEdge/2);
-			drawOverlay(pre2Ctx, pre2SacleEdge/2, pre2SacleEdge/2, pre2SacleEdge/2);
-		}
-		function drawOverlay(ctx, x, y, radius){
-			var globalCompositeOperation = ctx.globalCompositeOperation;
-			ctx.globalCompositeOperation = 'destination-in';
-			ctx.arc(x, y, radius, 0, 2 * Math.PI);
-			ctx.fillStyle = '#ffffff';
-			ctx.fill();
-			ctx.globalCompositeOperation = globalCompositeOperation;
-		}
-
-
-		function cut(isRect){
-			var imgData = ctx.getImageData(Math.abs(c.offsetLeft), 0, frameEdge, frameEdge);
-			var canvas = document.createElement('canvas');
-			canvas.width = canvas.height = frameEdge;
-			var cctx = canvas.getContext('2d');
-			cctx.putImageData(imgData, 0, 0);
-			if(!isRect){
-				drawOverlay(cctx, frameEdge / 2, frameEdge / 2, frameEdge / 2);
-			}
+		var cc = new xClip({
+			container: '#clip'
+		}).init();
+		function cut(isrect){
+			var data = cc.cut(isrect);
 			var img = new Image();
-			img.src = canvas.toDataURL();
+			img.src = data;
 			document.body.appendChild(img);
 		}
 	</script>
