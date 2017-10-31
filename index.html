@@ -5,6 +5,11 @@
 	<title>Clip</title>
 	<style>
 		.x-clip>.main, .x-clip>.preview{
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			-o-user-select: none;
+			user-select: none;
 			position: relative;
 		}
 		.x-clip>div{float: left;}
@@ -21,7 +26,7 @@
 			top: 0;
 			left: 0;
 			z-index: 10;
-			pointer-events: none;
+			/*pointer-events: none;*/
 		}
 		.x-clip>.main>.main-canvas{
 			position: absolute;
@@ -42,18 +47,18 @@
 	<script>
 		var cc = new xClip({
 			container: '#clip',
-			img: "shu.jpg"
+			img: "long.png"
 		}).init();
 		var cc = new xClip({
 			container: '#clip1',
-			img: "t01a17d0ff529c90919.jpg"
+			img: "small.png"
 		}).init();
-		// function cut(isrect){
-		// 	var data = cc.cut(isrect);
-		// 	var img = new Image();
-		// 	img.src = data;
-		// 	document.body.appendChild(img);
-		// }
+		function cut(isrect){
+			var data = cc.cut(isrect);
+			var img = new Image();
+			img.src = data;
+			document.body.appendChild(img);
+		}
 	</script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 		this.frameEdge = 300;
 		this.pre1Edge = 128;
 		this.pre2Edge = 64;
-
+		this.moveDirection = 0;
 		this.container = document.querySelector(options.container);
 		this.options = {
 			img: options.img
@@ -53,6 +53,14 @@
 
 			this.mainCanvas.width = this.img.width;
 			this.mainCanvas.height = this.img.height;
+			if(this.mainCanvas.width < this.frameEdge){
+				this.mainCanvas.width = this.frameEdge;
+				this.mainCanvas.height = this.img.height / this.img.width * this.mainCanvas.width;
+			}
+			if(this.mainCanvas.height < this.frameEdge){
+				this.mainCanvas.height = this.frameEdge;
+				this.mainCanvas.width = this.img.width / this.img.height * this.mainCanvas.height;
+			}
 
 			this.mainCtx.scale(this.mainScale, this.mainScale);
 			this.pre1Ctx.scale(this.pre1Scale, this.pre1Scale);
@@ -129,6 +137,7 @@
 				}
 				this.drawPreview();
 			}
+			return false;
 		}.bind(this));
 		function cancelMove(e){
 			isMoving = false;
@@ -159,6 +168,10 @@
 		// });
 
 		return this;
+	};
+	Clip.prototype.rotate = function(ctx){
+		this.mainCtx.rotate(Math.PI / 2);
+		// this.draw(this.mainCtx, false, this.mainCanvas.width, this.mainCanvas.height);
 	};
 	Clip.prototype.draw = function(ctx, clip, width, height){
 		ctx.clearRect(0, 0, width, height);
