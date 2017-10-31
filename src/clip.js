@@ -5,28 +5,15 @@
 		this.frameEdge = 300;
 		this.pre1Edge = 128;
 		this.pre2Edge = 64;
+
 		this.moveDirection = 0;
+		this.towards = 0;
+
 		this.container = document.querySelector(options.container);
 		this.options = {
 			img: options.img
 		}
-		// 图像旋转
-		this.rotation = {
-			pos: [0, 1, 2, 3],
-			index: 0,
-			setIndex: function(i){
-				this.index = i;
-			},
-			getIndex: function(){
-				return this.index;
-			},
-			pre: function(){
-				return this.pos[--this.index % this.pos.length];
-			},
-			next: function(){
-				return this.pos[++this.index % this.pos.length];
-			}
-		}
+		this.originPos = {x: 0, y: 0};
 	}
 	Clip.prototype.init = function(){
 		this.initDom();
@@ -41,12 +28,10 @@
 		octx.fillStyle = '#ffffff';
 		octx.fill();
 
-		// 
 		this.mainCtx = this.mainCanvas.getContext('2d');
 		this.pre1Ctx = this.pre1Canvas.getContext('2d');
 		this.pre2Ctx = this.pre2Canvas.getContext('2d');
 		this.mainScale = 1;
-		// tmpScale;
 		this.pre1Scale = 1
 		this.pre2Scale = 1;
 		
@@ -59,38 +44,40 @@
 			if(this.img.width > this.img.height){
 				// 只能横向移动
 				this.moveDirection = 0;
-				this.rotation.setIndex(0);
+				this.towards = 0;
 				this.imgMinEdge = this.img.height;
-				this.mainScale /*= tmpScale */= this.frameEdge / this.img.height;
+				this.mainScale = this.frameEdge / this.img.height;
 			}else{
 				// 只能竖向移动
 				this.moveDirection = 1;
-				this.rotation.setIndex(1);
+				this.towards = 1;
 				this.imgMinEdge = this.img.width;
-				this.mainScale = /*tmpScale =*/ this.frameEdge / this.img.width;
+				this.mainScale = this.frameEdge / this.img.width;
 			}
 			this.pre1Scale = this.pre1Edge / this.imgMinEdge;
 			this.pre2Scale = this.pre2Edge / this.imgMinEdge;
 
-			this.mainCanvas.width = this.img.width;
-			this.mainCanvas.height = this.img.height;
-			// 当图片的尺寸小于编辑框的尺寸时，设置图片大小填充满编辑框
-			if(this.mainCanvas.width < this.frameEdge){
-				this.mainCanvas.width = this.frameEdge;
-				this.mainCanvas.height = this.img.height / this.img.width * this.mainCanvas.width;
-			}
-			if(this.mainCanvas.height < this.frameEdge){
-				this.mainCanvas.height = this.frameEdge;
-				this.mainCanvas.width = this.img.width / this.img.height * this.mainCanvas.height;
-			}
+			this.mainCanvas.width = this.frameEdge;
+			this.mainCanvas.height = this.frameEdge;
+			// this.mainCanvas.width = this.img.width;
+			// this.mainCanvas.height = this.img.height;
+			// // 当图片的尺寸小于编辑框的尺寸时，设置图片大小填充满编辑框
+			// if(this.mainCanvas.width < this.frameEdge){
+			// 	this.mainCanvas.width = this.frameEdge;
+			// 	this.mainCanvas.height = this.img.height / this.img.width * this.mainCanvas.width;
+			// }
+			// if(this.mainCanvas.height < this.frameEdge){
+			// 	this.mainCanvas.height = this.frameEdge;
+			// 	this.mainCanvas.width = this.img.width / this.img.height * this.mainCanvas.height;
+			// }
+			// this.mainCtx.translate(this.frameEdge/2, this.frameEdge/2);
 
-			this.mainCtx.scale(this.mainScale, this.mainScale);
-			this.pre1Ctx.scale(this.pre1Scale, this.pre1Scale);
-			this.pre2Ctx.scale(this.pre2Scale, this.pre2Scale);
+			// this.mainCtx.scale(this.mainScale, this.mainScale);
+			// this.pre1Ctx.scale(this.pre1Scale, this.pre1Scale);
+			// this.pre2Ctx.scale(this.pre2Scale, this.pre2Scale);
 
-			this.draw(this.mainCtx, false, this.mainCanvas.width, this.mainCanvas.height);	
+			this.draw(this.mainCtx, false, this.mainCanvas.width, this.mainCanvas.height);
 			// this.drawPreview();
-			// this.rotate();
 		}.bind(this);
 
 		return this;
@@ -132,8 +119,13 @@
 		return this;
 	};
 	Clip.prototype.initEvent = function(){
+		this.mainDom.addEventListener('contextmenu', function(e){
+			e.stopPropagation();
+			e.preventDefault();
+		});
 		// 绑定鼠标和触屏事件
-		var isMoving = false, pos = {x: 0, y: 0}, originPos = {x: 0, y: 0}, left, top;
+		var isMoving = false, pos = {x: 0, y: 0}, left, top;
+		
 		this.mainDom.addEventListener('mousedown', function(e){
 			isMoving = true;
 			pos.x = e.pageX;
@@ -142,30 +134,44 @@
 		this.mainDom.addEventListener('mousemove', function(e){
 			if(isMoving){
 				if(!this.moveDirection){
-					left = e.pageX - pos.x + originPos.x;
+					top = 0;
+					if(this.towards == this.moveDirection){
+						left = e.pageX - pos.x + this.originPos.x;
+					}else{
+						top = left = e.pageY - pos.y + this.originPos.y;
+					}
 					if(left >= 0){
 						left = 0;
-					}else if(Math.abs(left) + this.frameEdge >= this.imgWidth * this.mainScale){
-						left = -(this.imgWidth * this.mainScale - this.frameEdge);
+					}else if(Math.abs(left) + this.frameEdge >= this.imgWidth){
+						left = -(this.imgWidth - this.frameEdge);
 					}
-					this.mainCtx.drawImage(this.img, 0, 0, this.img.width, this.img.height, left, 0, this.img.width, this.img.height);
+					this.mainCtx.clearRect(0, 0, this.frameEdge, this.frameEdge);
+					this.mainCtx.drawImage(this.img, 0, 0, this.imgWidth, this.imgHeight, left, 0, this.imgWidth, this.imgHeight);
+					console.log(left);
 				}else{
-					top = e.pageY - pos.y + originPos.y;
+					left = 0;
+					if(this.towards == this.moveDirection){
+						top = e.pageY - pos.y + this.originPos.y;
+					}else{
+						left = top = e.pageX - pos.x + this.originPos.x;
+					}
 					if(top >= 0){
 						top = 0;
-					}else if(Math.abs(top) + this.frameEdge >= this.imgHeight * this.mainScale){
-						top = -(this.imgHeight * this.mainScale - this.frameEdge);
+					}else if(Math.abs(top) + this.frameEdge >= this.imgHeight){
+						top = -(this.imgHeight - this.frameEdge);
 					}
-					this.mainCtx.drawImage(this.img, 0, 0, this.img.width, this.img.height, 0, top, this.img.width, this.img.height);
+					this.mainCtx.clearRect(0, 0, this.frameEdge, this.frameEdge);
+					this.mainCtx.drawImage(this.img, 0, 0, this.imgWidth, this.imgHeight, 0, top, this.imgWidth, this.imgHeight);
+					console.log(top);
 				}
-				this.drawPreview();
+				// this.drawPreview();
 			}
 			return false;
 		}.bind(this));
 		function cancelMove(e){
 			isMoving = false;
-			originPos.x = left;
-			originPos.y = top;
+			this.originPos.x = left || 0;
+			this.originPos.y = top || 0;
 		}
 		this.mainDom.addEventListener('mouseup', cancelMove.bind(this));
 		this.mainDom.addEventListener('mouseout', cancelMove.bind(this));
@@ -193,38 +199,29 @@
 
 		return this;
 	};
-	Clip.prototype.rotate = function(ctx){
-		// var tmp = this.mainCanvas.width;
-		// this.mainCanvas.width = this.mainCanvas.height;
-		// this.mainCanvas.height = tmp;
-
-		// tmp = this.imgWidth;
-		// this.imgHeight = this.imgWidth;
-		// this.imgWidth = tmp;
-
-		// this.mainCtx.translate(this.frameEdge, this.mainCanvas.offsetLeft);
-		var rotateCenter = {x: 0, y: 0};
-		switch(this.rotation.next()){
-			case 0: rotateCenter.x = 0; rotateCenter.y = 0;break;
-			case 1: rotateCenter.x = 1; rotateCenter.y = 0;break;
-			case 2: rotateCenter.x = 1; rotateCenter.y = 1;break;
-			case 3: rotateCenter.x = 0; rotateCenter.y = 1;break;
-		}
-		this.mainCtx.translate(this.frameEdge * rotateCenter.x + Math.abs(this.mainCanvas.offsetLeft), this.mainCanvas.offsetLeft);
-		// 设置拖动方向
-		this.moveDirection = !this.moveDirection;
+	Clip.prototype.rotateLeft = function(){
+		this.mainCtx.translate(this.frameEdge, 0);
 		this.mainCtx.rotate(Math.PI / 2);
-		this.mainCtx.scale(this.mainScale, this.mainScale);
-		this.mainCtx.drawImage(this.img, 0, 0);
-
-		this.mainCtx.translate(0, 0);
+		this.rotate();
+	};
+	Clip.prototype.rotateRight = function(){
+		this.mainCtx.translate(0, this.frameEdge);
+		this.mainCtx.rotate(Math.PI / -2);
+		this.rotate();
+	};
+	Clip.prototype.rotate = function(ctx){
+		// 设置拖动方向
+		this.towards = !this.towards;
+		console.log(this.originPos.x, this.originPos.y);
+		this.draw(this.mainCtx, false, this.mainCanvas.width, this.mainCanvas.height);
 	};
 	Clip.prototype.draw = function(ctx, clip, width, height){
 		ctx.clearRect(0, 0, width, height);
 		if(clip){
-			ctx.drawImage(this.img, Math.abs(this.mainCanvas.offsetLeft) / this.mainScale, Math.abs(this.mainCanvas.offsetTop) / this.mainScale, this.imgMinEdge, this.imgMinEdge, 0, 0, width, height);
+			ctx.drawImage(this.img, Math.abs(this.originPos.x) / this.mainScale, Math.abs(this.originPos.y) / this.mainScale, this.imgMinEdge, this.imgMinEdge, 0, 0, width, height);
 		}else{
-			ctx.drawImage(this.img, 0, 0);
+			ctx.drawImage(this.img, Math.abs(this.originPos.x), Math.abs(this.originPos.y), this.img.width, this.img.height, 0, 0, this.img.width, this.img.height);
+
 		}
 		return this;
 	};
@@ -259,6 +256,5 @@
 		}
 		return canvas.toDataURL();
 	};
-	// Clip.prototype.
 	return Clip;
 });

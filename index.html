@@ -41,13 +41,16 @@
 <body>
 	<div id="clip"></div>
 	<div id="clip1"></div>
-	<button onclick="cut(1)">clip rect</button>
+	<img src="small.png" width="300" height="300">
+	<!-- <button onclick="cut(1)">clip rect</button> -->
 	<button onclick="cut()">clip arc</button>
+	<button onclick="cc.rotateLeft()">rotateLeft</button>
+	<button onclick="cc.rotateRight()">rotateRight</button>
 	<script src="src/clip.js"></script>
 	<script>
 		var cc = new xClip({
 			container: '#clip',
-			img: "long.png"
+			img: "shu.jpg"
 		}).init();
 		// new xClip({
 		// 	container: '#clip1',
