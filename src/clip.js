@@ -135,34 +135,40 @@
 			if(isMoving){
 				if(!this.moveDirection){
 					top = 0;
-					if(this.towards == this.moveDirection){
+					if(this.towards == this.moveDirection || this.towards == 2){
+						console.log(this.towards);
 						left = e.pageX - pos.x + this.originPos.x;
 					}else{
+						// 旋转后的朝向和初始方向不同时，图片的拖动方式改变为竖向
 						top = left = e.pageY - pos.y + this.originPos.y;
 					}
 					if(left >= 0){
-						left = 0;
+						left = top = 0;
+						// left = 0;
 					}else if(Math.abs(left) + this.frameEdge >= this.imgWidth){
-						left = -(this.imgWidth - this.frameEdge);
+						left = top = -(this.imgWidth - this.frameEdge);
 					}
 					this.mainCtx.clearRect(0, 0, this.frameEdge, this.frameEdge);
 					this.mainCtx.drawImage(this.img, 0, 0, this.imgWidth, this.imgHeight, left, 0, this.imgWidth, this.imgHeight);
-					console.log(left);
+					console.log(top, left);
 				}else{
 					left = 0;
-					if(this.towards == this.moveDirection){
+					if(this.towards == this.moveDirection || this.towards == 3){
+						console.log(this.towards);
 						top = e.pageY - pos.y + this.originPos.y;
 					}else{
+						// 旋转后的朝向和初始方向不同时，图片的拖动方式改变为横向
 						left = top = e.pageX - pos.x + this.originPos.x;
 					}
 					if(top >= 0){
-						top = 0;
+						left = top = 0;
+						// top = 0;
 					}else if(Math.abs(top) + this.frameEdge >= this.imgHeight){
-						top = -(this.imgHeight - this.frameEdge);
+						left = top = -(this.imgHeight - this.frameEdge);
 					}
 					this.mainCtx.clearRect(0, 0, this.frameEdge, this.frameEdge);
 					this.mainCtx.drawImage(this.img, 0, 0, this.imgWidth, this.imgHeight, 0, top, this.imgWidth, this.imgHeight);
-					console.log(top);
+					console.log(top, left);
 				}
 				// this.drawPreview();
 			}
@@ -211,7 +217,7 @@
 	};
 	Clip.prototype.rotate = function(ctx){
 		// 设置拖动方向
-		this.towards = !this.towards;
+		this.towards = ++this.towards % 4;
 		console.log(this.originPos.x, this.originPos.y);
 		this.draw(this.mainCtx, false, this.mainCanvas.width, this.mainCanvas.height);
 	};
