@@ -7,7 +7,7 @@
 		this.pre2Edge = 64;
 
 		this.moveDirection = 0;
-		this.towards = 0;
+		this.towards = 0; // 0,2: 横向, 1,3: 竖向
 
 		this.container = document.querySelector(options.container);
 		this.options = {
@@ -137,7 +137,11 @@
 					top = 0;
 					if(this.towards == this.moveDirection || this.towards == 2){
 						console.log(this.towards);
-						left = e.pageX - pos.x + this.originPos.x;
+						if(this.towards == 2){
+							left = this.originPos.x - (e.pageX - pos.x);
+						}else{
+							left = e.pageX - pos.x + this.originPos.x;
+						}
 					}else{
 						// 旋转后的朝向和初始方向不同时，图片的拖动方式改变为竖向
 						if(this.towards == 3){
@@ -159,7 +163,11 @@
 					left = 0;
 					if(this.towards == this.moveDirection || this.towards == 3){
 						console.log(this.towards);
-						top = e.pageY - pos.y + this.originPos.y;
+						if(this.towards == 3){
+							top = this.originPos.y - (e.pageY - pos.y);
+						}else{
+							top = e.pageY - pos.y + this.originPos.y;
+						}
 					}else{
 						// 旋转后的朝向和初始方向不同时，图片的拖动方式改变为横向
 						// left = top = e.pageX - pos.x + this.originPos.x;
@@ -227,8 +235,13 @@
 	Clip.prototype.rotate = function(ctx){
 		// 设置拖动方向
 		this.towards = ++this.towards % 4;
-		console.log(this.originPos.x, this.originPos.y);
-		this.draw(this.mainCtx, false, this.mainCanvas.width, this.mainCanvas.height);
+		if(!this.moveDirection){
+			// this.originPos.y = 0;
+			this.mainCtx.drawImage(this.img, Math.abs(this.originPos.x), 0, this.img.width, this.img.height, 0, 0, this.img.width, this.img.height);
+		}else{
+			// this.originPos.x = 0;
+			this.mainCtx.drawImage(this.img, 0, Math.abs(this.originPos.y), this.img.width, this.img.height, 0, 0, this.img.width, this.img.height);
+		}
 	};
 	Clip.prototype.draw = function(ctx, clip, width, height){
 		ctx.clearRect(0, 0, width, height);
