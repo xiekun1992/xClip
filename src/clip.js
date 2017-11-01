@@ -140,7 +140,11 @@
 						left = e.pageX - pos.x + this.originPos.x;
 					}else{
 						// 旋转后的朝向和初始方向不同时，图片的拖动方式改变为竖向
-						top = left = e.pageY - pos.y + this.originPos.y;
+						if(this.towards == 3){
+							top = left = this.originPos.y - (e.pageY - pos.y);
+						}else{
+							top = left = e.pageY - pos.y + this.originPos.y;
+						}
 					}
 					if(left >= 0){
 						left = top = 0;
@@ -158,7 +162,12 @@
 						top = e.pageY - pos.y + this.originPos.y;
 					}else{
 						// 旋转后的朝向和初始方向不同时，图片的拖动方式改变为横向
-						left = top = e.pageX - pos.x + this.originPos.x;
+						// left = top = e.pageX - pos.x + this.originPos.x;
+						if(this.towards == 2){
+							left = top = this.originPos.x - (e.pageX - pos.x);
+						}else{
+							left = top = e.pageX - pos.x + this.originPos.x;
+						}
 					}
 					if(top >= 0){
 						left = top = 0;
