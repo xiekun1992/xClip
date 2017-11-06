@@ -8,32 +8,180 @@
 		margin: 0;
 	}
 		canvas{
-			box-shadow: 0 0 4px;		
+			box-shadow: 0 0 4px;	
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			-o-user-select: none;
+			user-select: none;: 	
+		}
+		img{
+			border: 1px solid;
+			margin: 10px;
 		}
 	</style>
 </head>
 <body>
-	<canvas id="c" width="600" height="600"></canvas>
+	<canvas id="c" width="300" height="300"></canvas>
 	<button onclick="r(1)">l</button><button onclick="r()">r</button>
 	<button onclick="z(1)">z in</button><button onclick="z()">z out</button>
+	<button onclick="finish()">cut</button>
+	<div id="pics"></div>
 	<script>
-		var ctx = c.getContext('2d'), width = 600, height = 600;
+		var ctx = c.getContext('2d'), width = 300, height = 300, originPos = {x: 0, y: 0};
+		
+		var rotationImages = [], rotatePos = 0; // 1: right, 2: down, 3: left, 4: up
+
 		var img = new Image(), imgWidth, imgHeight;
-		var scale = 1;
-		var rotationImages = [];
-
-		var rotateCanvas = document.createElement('canvas');
-		var rctx = rotateCanvas.getContext('2d');
-
-		var mousedownPos = {x: 0, y: 0}, moving = false, originPos = {x: 0, y: 0};
-		var deltaPos = {x: 0, y: 0};
-		img.src = 'small.png';
+		// img.src = 'small.png';
+		img.src = 'Tulips.jpg';
 		img.onload = function(){
-			imgWidth = rotateCanvas.width = img.width;
-			imgHeight = rotateCanvas.height = img.height;
-			originPos = {x: (width-imgWidth)/2, y: (height-imgHeight)/2};
-			ctx.drawImage(img, 0, 0, imgWidth, imgHeight, originPos.x-imgWidth*(scale-1)/2, originPos.y-imgHeight* (scale-1)/2, imgWidth * scale, imgHeight * scale);
+			imgWidth = img.width;
+			imgHeight = img.height;
+			// 将大图等比例缩小到方框的大小，将小图等比例放大到方框的大小
+			scale = width / Math.min(img.width, img.height);
+			if(width >= Math.min(img.width, img.height)){
+				// 小图放大后不能缩放
+				scalable = false;
+			}else{
+				scalable = true;
+			}
+			// 默认居中显示
+			originPos = {x: (width - imgWidth * scale) / 2, y: (height - imgHeight * scale) / 2};
+			draw();
+			// 计算旋转用到的各角度的图片
+			rotationImages = createRotationImage(img, width);
 		};
+		// 移动
+		function translate(deltaX, deltaY){
+			originPos.x += deltaX;
+			originPos.y += deltaY;
+			// 计算是否超出边界
+			if(originPos.x > 0){
+				originPos.x = 0;
+			}
+			if(originPos.x < -Math.abs(width - img.width * scale)){
+				originPos.x = -Math.abs(width - img.width * scale);
+			}
+			if(originPos.y > 0){
+				originPos.y = 0;
+			}
+			if(originPos.y < -Math.abs(width - img.height * scale)){
+				originPos.y = -Math.abs(width - img.height * scale);
+			}
+			draw();
+		}
+		// 旋转
+		function createRotationImage(img, frameEdge){
+			var imgs = [];
+			var tmpCanvas = document.createElement('canvas');
+			var tmpCtx = tmpCanvas.getContext('2d');
+			// document.body.appendChild(tmpCanvas);
+
+			function rotateAndDraw(img, degree, x, y){
+				var edge = Math.min(img.width, img.height);
+				// 修改画布的大小以显示完整图片
+				if(x == y){
+					tmpCanvas.width = img.width;
+					tmpCanvas.height = img.height;
+				}else{
+					tmpCanvas.width = img.height;
+					tmpCanvas.height = img.width;
+				}
+				tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+
+				tmpCtx.translate(x * edge, y * edge);
+				tmpCtx.rotate(degree);
+				
+				var deltaX, deltaY;
+				if(img.width < img.height){
+					deltaY = x * (edge - img.height);
+					deltaX = 0;
+				}else{
+					deltaX = y * (edge - img.width);
+					deltaY = 0;
+				}
+				tmpCtx.drawImage(img, 0, 0, img.width, img.height, deltaX, deltaY, img.width, img.height);
+
+				var rImg = new Image();
+				rImg.src = tmpCanvas.toDataURL();
+				return rImg;
+			}
+			// 初始图片
+			imgs[0] = rotateAndDraw(img, 0, 0, 0);
+			// 顺时针90度
+			imgs[1] = rotateAndDraw(img, Math.PI / 2, 1, 0);
+			// 顺时针180度
+			imgs[2] = rotateAndDraw(img, Math.PI, 1, 1);
+			// 顺时针270度
+			imgs[3] = rotateAndDraw(img, Math.PI / 2 * 3, 0, 1);
+			return imgs;
+		}
+
+		function r(isLeft){
+			if(isLeft){
+				rotatePos++;
+			}else{
+				rotatePos--;
+			}
+			img = rotationImages[Math.abs(rotatePos) % rotationImages.length];
+			imgWidth = img.width;
+			imgHeight = img.height;
+			var delta = Math.abs(imgWidth - imgHeight) / 2 * scale;
+			if(imgWidth < imgHeight){
+			 	originPos.x += delta;
+			 	originPos.y -= delta;
+			}else{
+				originPos.x -= delta;
+			 	originPos.y += delta;
+			}
+			draw();
+		}
+		// 缩放
+		var scale = 1, scalable = false;
+		function z(isIn){
+			var increment = 0.01;
+			if(isIn){
+				if(scale + increment > 1){
+					return;
+				}
+				scale += increment;
+				increment = -increment;
+			}else{
+				scale -= increment;
+				if(scale * Math.min(img.width, img.height) < width){
+					scale = width / Math.min(img.width, img.height);
+					return ;
+				}
+			}
+			originPos.x = originPos.x + increment * imgWidth / 2;
+			originPos.y = originPos.y + increment * imgHeight / 2;
+			// 纠正缩小后图片超出边界
+			if(originPos.x > 0){
+				originPos.x = 0;
+			}
+			if(originPos.y > 0){
+				originPos.y = 0;
+			}
+			if(originPos.x + imgWidth * scale < width){
+				originPos.x = width - imgWidth * scale;
+			}
+			if(originPos.y + imgHeight * scale < height){
+				originPos.y = height - imgHeight * scale;
+			}
+			draw();
+		}
+
+		function draw(x, y){
+			ctx.clearRect(0,0,width,height);
+			ctx.drawImage(img, 0, 0, imgWidth, imgHeight, originPos.x, originPos.y, imgWidth * scale, imgHeight * scale);
+		}
+		function cut(){
+			return c.toDataURL();
+		}
+
+		// 移动交互
+		var mousedownPos = {x: 0, y: 0}, moving = false;
 		window.addEventListener('mousedown', function(e){
 			mousedownPos.x = e.pageX;
 			mousedownPos.y = e.pageY;
@@ -41,48 +189,31 @@
 		});
 		window.addEventListener('mousemove', function(e){
 			if(moving){
+				var deltaPos = {x: 0, y: 0};
 				deltaPos.x = e.pageX - mousedownPos.x;
 				deltaPos.y = e.pageY - mousedownPos.y;
-				console.log(deltaPos);
-				ctx.clearRect(0,0,width,height);
-
-				ctx.drawImage(img, 0, 0, img.width, img.height, originPos.x + deltaPos.x * scale, originPos.y + deltaPos.y * scale, img.width * scale, img.height * scale);
+				mousedownPos.x = e.pageX;
+				mousedownPos.y = e.pageY;
+				translate(deltaPos.x, deltaPos.y);
 			}
 		});
 		window.addEventListener('mouseup', function(){
 			moving = false;
-			originPos.x += deltaPos.x * scale;
-			originPos.y += deltaPos.y * scale;
+		});
+		// 缩放交互
+		window.addEventListener('mousewheel', function(e){
+			console.log(e)
+			if(e.wheelDelta > 0){
+				z(true);
+			}else{
+				z(false);
+			}
 		});
 
-		function r(isLeft){
-			return ;
-			ctx.clearRect(0,0,width,height);
-			if(isLeft){
-				rctx.translate(width, 0);
-				rctx.rotate(Math.PI / 2);
-			}else{
-				rctx.translate(width, 0);
-				rctx.rotate(Math.PI / -2);
-			}
-			rctx.drawImage(img, 0, 0);
-			var imgData = rctx.getImageData(0, 0, width, height);
-			ctx.putImageData(imgData, 0, 0);
-		}
-
-		function z(isIn){
-			ctx.clearRect(0,0,width,height);
-			var tmpScale;
-			if(isIn){
-				tmpScale = 1.1;
-			}else{
-				tmpScale = 1/1.1;
-			}
-			scale *= tmpScale;
-			ctx.clearRect(0,0,width,height);
-			ctx.drawImage(img, 0, 0, imgWidth, imgHeight, originPos.x-imgWidth*(tmpScale-1)/2, originPos.y-imgHeight* (tmpScale-1)/2, imgWidth * scale, imgHeight * scale);
-			originPos.x = originPos.x-imgWidth*(tmpScale-1)/2;
-			originPos.y = originPos.y-imgHeight* (tmpScale-1)/2;
+		function finish(){
+			var img = new Image();
+			img.src = cut();
+			document.body.appendChild(img);
 		}
 	</script>
 </body>
