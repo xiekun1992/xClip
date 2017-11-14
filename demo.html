@@ -13,7 +13,8 @@
 			-moz-user-select: none;
 			-ms-user-select: none;
 			-o-user-select: none;
-			user-select: none;: 	
+			user-select: none;
+			cursor: all-scroll;
 		}
 		img{
 			border: 1px solid;
@@ -56,19 +57,7 @@
 		function translate(deltaX, deltaY){
 			originPos.x += deltaX;
 			originPos.y += deltaY;
-			// 计算是否超出边界
-			if(originPos.x > 0){
-				originPos.x = 0;
-			}
-			if(originPos.x < -Math.abs(width - img.width * scale)){
-				originPos.x = -Math.abs(width - img.width * scale);
-			}
-			if(originPos.y > 0){
-				originPos.y = 0;
-			}
-			if(originPos.y < -Math.abs(width - img.height * scale)){
-				originPos.y = -Math.abs(width - img.height * scale);
-			}
+
 			draw();
 		}
 		// 旋转
@@ -156,7 +145,11 @@
 			}
 			originPos.x = originPos.x + increment * imgWidth / 2;
 			originPos.y = originPos.y + increment * imgHeight / 2;
-			// 纠正缩小后图片超出边界
+			
+			draw();
+		}
+		function edgeExceedCheck(){
+			// 纠正变换后图片超出边界
 			if(originPos.x > 0){
 				originPos.x = 0;
 			}
@@ -169,10 +162,10 @@
 			if(originPos.y + imgHeight * scale < height){
 				originPos.y = height - imgHeight * scale;
 			}
-			draw();
 		}
 
 		function draw(x, y){
+			edgeExceedCheck();
 			ctx.clearRect(0,0,width,height);
 			ctx.drawImage(img, 0, 0, imgWidth, imgHeight, originPos.x, originPos.y, imgWidth * scale, imgHeight * scale);
 		}

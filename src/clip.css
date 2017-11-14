@@ -1,0 +1,21 @@
+.x-clip{
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+	position: relative;
+	cursor: all-scroll;
+    display: inline-block;
+}
+.x-clip>.overlay{
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 10;
+}
+.x-clip>.main-canvas{
+	position: absolute;
+	top: 0;
+	left: 0;
+}

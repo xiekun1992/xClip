@@ -3,65 +3,19 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Clip</title>
-	<style>
-		.x-clip>.main, .x-clip>.preview{
-			-webkit-user-select: none;
-			-moz-user-select: none;
-			-ms-user-select: none;
-			-o-user-select: none;
-			user-select: none;
-			position: relative;
-		}
-		.x-clip>div{float: left;}
-		.x-clip>.main{
-		    overflow: hidden;
-		    cursor: all-scroll;
-		}
-		.x-clip>.preview{
-			margin-left: 20px;
-			text-align: center;
-		}
-		.x-clip>.main>.overlay{
-			position: absolute;
-			top: 0;
-			left: 0;
-			z-index: 10;
-			/*pointer-events: none;*/
-		}
-		.x-clip>.main>.main-canvas{
-			position: absolute;
-		}
-		.x-clip>.preview>canvas{
-			display: block;
-			margin: auto;
-			margin-bottom: 20px;
-		}
-	</style>
+	<link rel="stylesheet" href="src/clip.css">
 </head>
 <body>
 	<div id="clip"></div>
-	<div id="clip1"></div>
-	<img src="small.png" width="300" height="300">
-	<!-- <button onclick="cut(1)">clip rect</button> -->
-	<button onclick="cut()">clip arc</button>
-	<button onclick="cc.rotateLeft()">rotateLeft</button>
-	<button onclick="cc.rotateRight()">rotateRight</button>
+	<button onclick="cc.rotate(1)">l</button>
+	<button onclick="cc.rotate(0)">r</button>
 	<script src="src/clip.js"></script>
 	<script>
 		var cc = new xClip({
-			container: '#clip',
-			img: "shu.jpg"
+			container: clip,
+			imagePath: "shu.jpg",
+			addOverlay: true
 		}).init();
-		// new xClip({
-		// 	container: '#clip1',
-		// 	img: "small.png"
-		// }).init();
-		function cut(isrect){
-			var data = cc.cut(isrect);
-			var img = new Image();
-			img.src = data;
-			document.body.appendChild(img);
-		}
 	</script>
 </body>
 </html>
