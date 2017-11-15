@@ -1,10 +1,54 @@
 (function(factory){
 	this.xClip = factory();
 })(function(){
+	function Event(){
+		this.events = {};
+	}
+	Event.prototype.on = function(eventName, cb){
+		if(!this.events[eventName]){
+			this.events[eventName] = [];
+		}
+		this.events[eventName].push(cb);
+	};
+	Event.prototype.trigger = function(eventName, data){
+		var cbs = this.events[eventName];
+		if(cbs){
+			for(var i = 0; i < cbs.length; i++){
+				cbs[i](data);
+			}
+		}
+	};
+	Event.prototype.unbind = function(eventName, cb){
+		var cbs = this.events[eventName];
+		if(cbs){
+			for(var i = cbs.length - 1; i >= 0; i--){
+				if(cbs[i] === cb){
+					cbs.splice(i, 1);
+				}
+			}
+		}
+	};
 	function Clip(options){
+		Event.call(this);
+
+		var defaultOptions = {
+			container: document.body,
+			imagePath: '',
+			addOverlay: false,
+			previewImages: [],
+			enableMove: true,
+			enableZoom: true,
+			enableRotate: true
+		}
+		options = Object.setPrototypeOf(options, defaultOptions);
+
 		this.container = options.container;
-		this.imagePath = options.imagePath || '';
-		this.addOverlay = options.addOverlay || false;
+		this.imagePath = options.imagePath;
+		this.addOverlay = options.addOverlay;
+		this.enableMove = options.enableMove;
+		this.enableZoom = options.enableZoom;
+		this.enableRotate = options.enableRotate;
+		this.previewImages = options.previewImages;
 
 		this.edge = options.edge || 300;
 		this.originPos = {x: 0, y: 0};
@@ -15,10 +59,14 @@
 
 		this.img = new Image();
 		this.imgWidth = this.imgHeight = 0;
+		this.previewImgs = [];
 	}
+	Clip.prototype = Object.create(Event.prototype);
+
 	Clip.prototype.init = function(){
 		this.initDom();
 		this.initEvent();
+		this.preview();
 
 		this.ctx = this.mainCanvas.getContext('2d');
 		var overlayCtx = this.overlayCanvas.getContext('2d');
@@ -36,10 +84,22 @@
 			};
 			this.draw();
 			// 计算旋转用到的各角度的图片
-			this.rotationImages = createRotationImage(this.img, this.edge);
+			if(this.enableRotate){
+				this.rotationImages = createRotationImage(this.img, this.edge);
+			}
 		}.bind(this);
 		this.addOverlay && this.drawOverlay(overlayCtx, this.edge / 2, this.edge / 2, this.edge / 2);
+		this.trigger('clip.init');
 		return this;
+	};
+	Clip.prototype.destroy = function(){
+		this.dom.removeChild(this.mainCanvas);
+		this.dom.removeChild(this.overlayCanvas);
+		this.container.removeChild(this.dom);
+		this.container = this.imagePath = this.originPos = this.rotationImages = this.img = this.ctx = null;
+		this.dom = this.overlayCanvas = this.mainCanvas = null;
+		this.trigger('clip.destroy');
+		this.events = null;
 	};
 	Clip.prototype.initDom = function(){
 		this.dom = document.createElement('div');
@@ -93,12 +153,15 @@
 		}.bind(this));
 	};
 	Clip.prototype.move = function(deltaX, deltaY){
+		if(!this.enableMove) return ;
 		// 移动
 		this.originPos.x += deltaX;
 		this.originPos.y += deltaY;
 		this.draw();
+		this.trigger('clip.move');
 	}
 	Clip.prototype.rotate = function(isRotateLeft){
+		if(!this.enableRotate) return ;
 		if(isRotateLeft){
 			this.rotatePos++;
 		}else{
@@ -116,8 +179,10 @@
 		 	this.originPos.y += delta;
 		}
 		this.draw();
+		this.trigger('clip.rotate');
 	};
 	Clip.prototype.zoom = function(isZoomIn){
+		if(!this.enableZoom) return ;
 		var increment = 0.01;
 		if(isZoomIn){
 			if(this.scale + increment > 1){
@@ -135,11 +200,13 @@
 		this.originPos.x = this.originPos.x + increment * this.imgWidth / 2;
 		this.originPos.y = this.originPos.y + increment * this.imgHeight / 2;
 		this.draw();
+		this.trigger('clip.zoom');
 	}
 	Clip.prototype.draw = function(){
 		this.edgeExceedCheck();
 		this.ctx.clearRect(0, 0, this.edge, this.edge);
 		this.ctx.drawImage(this.img, 0, 0, this.imgWidth, this.imgHeight, this.originPos.x, this.originPos.y, this.imgWidth * this.scale, this.imgHeight * this.scale);
+		this.trigger('clip.draw');
 		return this;
 	};
 	Clip.prototype.edgeExceedCheck = function(){
@@ -217,5 +284,23 @@
 	Clip.prototype.cut = function(){
 		return this.mainCanvas.toDataURL();
 	};
+	Clip.prototype.preview = function(){
+		this.previewImages.forEach(function(config){
+			var canvas = document.createElement('canvas');
+			canvas.width = canvas.height = config.size;
+			this.previewImgs.push({ctx: canvas.getContext('2d'), size: config.size});
+			config.container.appendChild(canvas);
+		}.bind(this));
+
+		if(this.previewImgs.length > 0){
+			this.on('clip.draw', function(){
+				this.previewImgs.forEach(function(p){
+					p.ctx.clearRect(0, 0, p.size, p.size);
+					p.ctx.drawImage(this.img, 0, 0, this.img.width, this.img.height, 
+						this.originPos.x * p.size / this.edge, this.originPos.y * p.size / this.edge, this.imgWidth * this.scale * p.size / this.edge, this.imgHeight * this.scale * p.size / this.edge);
+				}.bind(this));
+			}.bind(this));
+		}
+	}
 	return Clip;
 });

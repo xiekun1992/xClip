@@ -7,6 +7,8 @@
 </head>
 <body>
 	<div id="clip"></div>
+	<div id="preview"></div>
+	<img src="" id="img">
 	<button onclick="cc.rotate(1)">l</button>
 	<button onclick="cc.rotate(0)">r</button>
 	<script src="src/clip.js"></script>
@@ -14,8 +16,14 @@
 		var cc = new xClip({
 			container: clip,
 			imagePath: "shu.jpg",
-			addOverlay: true
+			addOverlay: true,
+			previewImages:[{
+				container: preview, size: 90
+			}]
 		}).init();
+		// cc.on('clip.draw', function(){
+		// 	img.src = cc.cut();
+		// });
 	</script>
 </body>
 </html>
