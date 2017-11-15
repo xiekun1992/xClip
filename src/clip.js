@@ -38,7 +38,8 @@
 			previewImages: [],
 			enableMove: true,
 			enableZoom: true,
-			enableRotate: true
+			enableRotate: true,
+			increment: 0.01
 		}
 		options = Object.setPrototypeOf(options, defaultOptions);
 
@@ -49,6 +50,7 @@
 		this.enableZoom = options.enableZoom;
 		this.enableRotate = options.enableRotate;
 		this.previewImages = options.previewImages;
+		this.increment = options.increment;
 
 		this.edge = options.edge || 300;
 		this.originPos = {x: 0, y: 0};
@@ -87,9 +89,9 @@
 			if(this.enableRotate){
 				this.rotationImages = createRotationImage(this.img, this.edge);
 			}
+			this.addOverlay && this.drawOverlay(overlayCtx, this.edge / 2, this.edge / 2, this.edge / 2);
+			this.trigger('clip.init');
 		}.bind(this);
-		this.addOverlay && this.drawOverlay(overlayCtx, this.edge / 2, this.edge / 2, this.edge / 2);
-		this.trigger('clip.init');
 		return this;
 	};
 	Clip.prototype.destroy = function(){
@@ -100,6 +102,10 @@
 		this.dom = this.overlayCanvas = this.mainCanvas = null;
 		this.trigger('clip.destroy');
 		this.events = null;
+		this.previewImages.forEach(function(p){
+			p.container.innerHTML = '';
+		});
+		this.previewImgs = [];
 	};
 	Clip.prototype.initDom = function(){
 		this.dom = document.createElement('div');
@@ -121,34 +127,97 @@
 	};
 	Clip.prototype.initEvent = function(){
 		// 移动交互
-		var mousedownPos = {x: 0, y: 0}, moving = false;
-		this.dom.addEventListener('mousedown', function(e){
-			mousedownPos.x = e.pageX;
-			mousedownPos.y = e.pageY;
-			moving = true;
-		});
-		this.dom.addEventListener('mousemove', function(e){
-			if(moving){
-				var deltaPos = {x: 0, y: 0};
-				deltaPos.x = e.pageX - mousedownPos.x;
-				deltaPos.y = e.pageY - mousedownPos.y;
-				mousedownPos.x = e.pageX;
-				mousedownPos.y = e.pageY;
-				this.move(deltaPos.x, deltaPos.y);
-			}
-		}.bind(this));
+		var mousedownPos, moving = false, scaling = false, scaleDistance = 0, domOffset = mapMousePosition(this.dom);
+		console.log(domOffset)
+		this.dom.addEventListener('mousedown', startMove);
+		this.dom.addEventListener('mousemove', dealMove.bind(this));
 		this.dom.addEventListener('mouseup', cancelMove);
 		this.dom.addEventListener('mouseout', cancelMove);
 		this.dom.addEventListener('mouseleave', cancelMove);
-		function cancelMove(){
+
+		this.dom.addEventListener('touchstart', startMove);
+		this.dom.addEventListener('touchmove', dealMove.bind(this));
+		this.dom.addEventListener('touchend', cancelMove);
+		this.dom.addEventListener('touchcancel', cancelMove);
+
+		function mapMousePosition(element) {
+			if (element) {
+				var offset = {
+						x: element.offsetLeft,
+						y: element.offsetTop
+					},
+					parentNode = element.parentNode;
+				if (parentNode && parentNode.tagName.toLowerCase() !== "body") {
+					var parentOffset = mapMousePosition(parentNode);
+					offset.x += parentOffset.x;
+					offset.y += parentOffset.y;
+				}
+				return offset;
+			}
+		};
+		function extractPos(e){
+			scaling = false;
+			if(e.touches && e.touches.length > 0){
+				if(e.touches.length > 1){
+					scaling = true;
+					return [
+						{x: e.touches[0].pageX, y: e.touches[0].pageY},
+						{x: e.touches[1].pageX, y: e.touches[1].pageY}
+					];
+				}
+				return [{x: e.touches[0].pageX, y: e.touches[0].pageY}];
+			}
+			return [{x: e.pageX, y: e.pageY}];
+		}
+		function calcFingerDistance(p1, p2){
+			return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
+		}
+		function startMove(e){
+			mousedownPos = extractPos(e);
+			if(!scaling){
+				mousedownPos = mousedownPos[0];
+			}else{
+				scaleDistance = calcFingerDistance(mousedownPos[0], mousedownPos[1]);
+			}
+			console.log(mousedownPos);
+			moving = true;
+		}
+		function dealMove(e){
+			if(moving){
+				var points = extractPos(e);
+				if(scaling){ // 双指缩放
+					var distance = calcFingerDistance(points[0], points[1]);
+					if(distance < scaleDistance){
+						this.zoom(false);
+						this.trigger('clip.zoom', false);
+					}else if(distance > scaleDistance){
+						this.zoom(true);
+						this.trigger('clip.zoom', true);
+					}
+					scaleDistance = distance;
+				}else{ // 单指或鼠标移动
+					points = points[0];
+					var deltaPos = {x: 0, y: 0};
+					deltaPos.x = points.x - mousedownPos.x;
+					deltaPos.y = points.y - mousedownPos.y;
+					mousedownPos.x = points.x;
+					mousedownPos.y = points.y;
+					this.move(deltaPos.x, deltaPos.y);
+					this.trigger('clip.move');
+				}
+			}
+		}
+		function cancelMove(e){
 			moving = false;
 		}
 		// 缩放交互
 		this.dom.addEventListener('mousewheel', function(e){
 			if(e.wheelDelta > 0){
 				this.zoom(true);
+				this.trigger('clip.zoom', true);
 			}else{
 				this.zoom(false);
+				this.trigger('clip.zoom', false);
 			}
 		}.bind(this));
 	};
@@ -158,7 +227,6 @@
 		this.originPos.x += deltaX;
 		this.originPos.y += deltaY;
 		this.draw();
-		this.trigger('clip.move');
 	}
 	Clip.prototype.rotate = function(isRotateLeft){
 		if(!this.enableRotate) return ;
@@ -179,11 +247,11 @@
 		 	this.originPos.y += delta;
 		}
 		this.draw();
-		this.trigger('clip.rotate');
+		// this.trigger('clip.rotate');
 	};
 	Clip.prototype.zoom = function(isZoomIn){
 		if(!this.enableZoom) return ;
-		var increment = 0.01;
+		var increment = this.increment;
 		if(isZoomIn){
 			if(this.scale + increment > 1){
 				return;
@@ -200,7 +268,6 @@
 		this.originPos.x = this.originPos.x + increment * this.imgWidth / 2;
 		this.originPos.y = this.originPos.y + increment * this.imgHeight / 2;
 		this.draw();
-		this.trigger('clip.zoom');
 	}
 	Clip.prototype.draw = function(){
 		this.edgeExceedCheck();

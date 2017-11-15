@@ -3,24 +3,51 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Clip</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no,maximum-scale=1">
+	<style>
+		body{margin: 20;}
+	</style>
 	<link rel="stylesheet" href="src/clip.css">
 </head>
 <body>
 	<div id="clip"></div>
 	<div id="preview"></div>
 	<img src="" id="img">
+	<input type="range" id="range" min="0" max="10" value="0">
 	<button onclick="cc.rotate(1)">l</button>
 	<button onclick="cc.rotate(0)">r</button>
+	<div id="s"></div>
+	<div id="sdis"></div>
+	<div id="edis"></div>
 	<script src="src/clip.js"></script>
 	<script>
 		var cc = new xClip({
 			container: clip,
-			imagePath: "shu.jpg",
+			imagePath: "Tulips.jpg",
 			addOverlay: true,
 			previewImages:[{
 				container: preview, size: 90
 			}]
 		}).init();
+		var scale = 0, rstep;
+		cc.on('clip.init', function(){
+			cc.increment = Math.abs(1 - cc.scale) / 10;
+			range.oninput = function(){
+				cc.zoom(this.value - scale > 0?true: false);
+				scale = this.value;
+			}
+		});
+		cc.on('clip.zoom', function(isZoomIn){
+			console.log('zoom', isZoomIn)
+			if(isZoomIn){
+				++scale;
+				if(scale > 10) scale = 10;
+			}else{
+				--scale;
+				if(scale <= 0) scale = 0;
+			}
+			range.value = scale;
+		});
 		// cc.on('clip.draw', function(){
 		// 	img.src = cc.cut();
 		// });
