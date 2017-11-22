@@ -39,7 +39,8 @@
 			enableMove: true,
 			enableZoom: true,
 			enableRotate: true,
-			increment: 0.01
+			increment: 0.01,
+			touchFault: 0 // 红外屏触屏状态，防手指按下不动时图片抖动，建议设置8
 		}
 		options = Object.setPrototypeOf(options, defaultOptions);
 
@@ -51,6 +52,7 @@
 		this.enableRotate = options.enableRotate;
 		this.previewImages = options.previewImages;
 		this.increment = options.increment;
+		this.touchFault = options.touchFault;
 
 		this.edge = options.edge || 300;
 		this.originPos = {x: 0, y: 0};
@@ -127,7 +129,7 @@
 	};
 	Clip.prototype.initEvent = function(){
 		// 移动交互
-		var mousedownPos, moving = false, scaling = false, scaleDistance = 0, domOffset = mapMousePosition(this.dom);
+		var mousedownPos, moving = false, scaling = false, scaleDistance = 0, domOffset = mapMousePosition(this.dom), prevPos;
 		console.log(domOffset)
 		this.dom.addEventListener('mousedown', startMove);
 		this.dom.addEventListener('mousemove', dealMove.bind(this));
@@ -158,7 +160,8 @@
 		function extractPos(e){
 			scaling = false;
 			if(e.touches && e.touches.length > 0){
-				if(e.touches.length > 1){
+				if(e.touches.length == 2){
+					// 按下两指，处于触屏缩放
 					scaling = true;
 					return [
 						{x: e.touches[0].pageX, y: e.touches[0].pageY},
@@ -172,20 +175,27 @@
 		function calcFingerDistance(p1, p2){
 			return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
 		}
+		function isWithinTouchFault(p1, p2){
+			if(p1 && p2){
+				return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) < Math.pow(this.touchFault, 2);
+			}
+			return true;
+		}
 		function startMove(e){
-			mousedownPos = extractPos(e);
-			if(!scaling){
+			prevPos = mousedownPos = extractPos(e); // 记录初始按下的位置
+			if(!scaling){ 
 				mousedownPos = mousedownPos[0];
 			}else{
 				scaleDistance = calcFingerDistance(mousedownPos[0], mousedownPos[1]);
 			}
-			console.log(mousedownPos);
 			moving = true;
 		}
 		function dealMove(e){
 			if(moving){
 				var points = extractPos(e);
 				if(scaling){ // 双指缩放
+					// 判断触屏下手指移动是否超过阈值，未超过则不动，否则进行缩放
+					if(isWithinTouchFault.call(this, prevPos[0], points[0]) && isWithinTouchFault.call(this, prevPos[1], points[1])) return ;
 					var distance = calcFingerDistance(points[0], points[1]);
 					if(distance < scaleDistance){
 						this.zoom(false);
@@ -195,15 +205,18 @@
 						this.trigger('clip.zoom', true);
 					}
 					scaleDistance = distance;
+					prevPos = points;
 				}else{ // 单指或鼠标移动
-					points = points[0];
-					var deltaPos = {x: 0, y: 0};
-					deltaPos.x = points.x - mousedownPos.x;
-					deltaPos.y = points.y - mousedownPos.y;
-					mousedownPos.x = points.x;
-					mousedownPos.y = points.y;
-					this.move(deltaPos.x, deltaPos.y);
-					this.trigger('clip.move');
+					if(typeof mousedownPos.x !== 'undefined' && typeof mousedownPos.y !== 'undefined'){ // 防止缩放的时候移动出现undefined，导致计算得到NaN
+						points = points[0];
+						var deltaPos = {x: 0, y: 0};
+						deltaPos.x = points.x - mousedownPos.x;
+						deltaPos.y = points.y - mousedownPos.y;
+						mousedownPos.x = points.x;
+						mousedownPos.y = points.y;
+						this.move(deltaPos.x, deltaPos.y);
+						this.trigger('clip.move');
+					}
 				}
 			}
 		}
@@ -249,9 +262,12 @@
 		this.draw();
 		// this.trigger('clip.rotate');
 	};
-	Clip.prototype.zoom = function(isZoomIn, step){
+	Clip.prototype.zoom = function(isZoomIn, zoomStep){
 		if(!this.enableZoom) return ;
-		step = step || 1;
+		var step = zoomStep;
+		if(!step || step < 0){
+			step = 1;
+		}
 		var increment = this.increment * step;
 		if(isZoomIn){
 			if(this.scale + increment > 1){
