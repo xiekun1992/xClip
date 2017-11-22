@@ -249,9 +249,10 @@
 		this.draw();
 		// this.trigger('clip.rotate');
 	};
-	Clip.prototype.zoom = function(isZoomIn){
+	Clip.prototype.zoom = function(isZoomIn, step){
 		if(!this.enableZoom) return ;
-		var increment = this.increment;
+		step = step || 1;
+		var increment = this.increment * step;
 		if(isZoomIn){
 			if(this.scale + increment > 1){
 				return;
