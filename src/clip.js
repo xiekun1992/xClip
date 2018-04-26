@@ -248,6 +248,8 @@
 				this.zoom(false);
 				this.trigger('clip.zoom', false);
 			}
+			e.stopPropagation();
+			e.preventDefault();
 		}.bind(this));
 	};
 	Clip.prototype.move = function(deltaX, deltaY){
@@ -326,7 +328,7 @@
 			x2: this.imgWidth * this.scale - this.edge - Math.abs(this.originPos.x),
 			y2: this.imgHeight * this.scale - this.edge - Math.abs(this.originPos.y)
 		};
-		console.log(this.edgeDistance);
+		// console.log(this.edgeDistance);
 	}
 	// 旋转
 	function createRotationImage(img, frameEdge){
