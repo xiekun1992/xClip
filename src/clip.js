@@ -1,6 +1,14 @@
-(function(factory){
-	this.xClip = factory();
-})(function(){
+(function(global, factory){
+	if(typeof define === 'function' && define.amd){ //amd
+		define('xClip', factory);
+	}else if(typeof module === 'object' && module.exports && typeof exports === 'object'){//commonjs
+		module.exports = factory();
+	}else if(typeof exports === 'object'){ //es6
+		exports.xClip = factory();
+	}else{ //default
+		global.xClip = factory();
+	}
+})(this, function(){
 	function Event(){
 		this.events = {};
 	}
