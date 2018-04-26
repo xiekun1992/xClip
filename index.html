@@ -14,8 +14,8 @@
 	<div id="preview"></div>
 	<img src="" id="img">
 	<input type="range" id="range" min="0" max="10" value="0">
-	<button onclick="cc.rotate(1)">l</button>
-	<button onclick="cc.rotate(0)">r</button>
+	<button id="rl" onclick="cc.rotate(1)">l</button>
+	<button id="rr" onclick="cc.rotate(0)">r</button>
 	<div id="s"></div>
 	<div id="sdis"></div>
 	<div id="edis"></div>
@@ -38,7 +38,7 @@
 			}
 		});
 		cc.on('clip.zoom', function(isZoomIn){
-			console.log('zoom', isZoomIn)
+			// console.log('zoom', isZoomIn)
 			if(isZoomIn){
 				++scale;
 				if(scale > 10) scale = 10;
@@ -48,6 +48,9 @@
 			}
 			range.value = scale;
 		});
+		// setInterval(function(){
+		// 	rr.click();
+		// },100);
 		// cc.on('clip.draw', function(){
 		// 	img.src = cc.cut();
 		// });

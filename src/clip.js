@@ -56,6 +56,8 @@
 
 		this.edge = options.edge || 300;
 		this.originPos = {x: 0, y: 0};
+		// 保存图片左上角和右下角到矩形显示框的距离
+		this.edgeDistance = {x1: 0, y1: 0, x2: 0, y2: 0};
 		this.scale = 1;
 
 		this.rotationImages = []
@@ -85,6 +87,12 @@
 			this.originPos = {
 				x: (this.edge - this.imgWidth * this.scale) / 2, 
 				y: (this.edge - this.imgHeight * this.scale) / 2
+			};
+			this.edgeDistance = {
+				x1: this.originPos.x, 
+				y1: this.originPos.y, 
+				x2: this.originPos.x, 
+				y2: this.originPos.y
 			};
 			this.draw();
 			// 计算旋转用到的各角度的图片
@@ -245,20 +253,17 @@
 		if(!this.enableRotate) return ;
 		if(isRotateLeft){
 			this.rotatePos++;
+			this.originPos = {x: -this.edgeDistance.y2, y: -this.edgeDistance.x1};
 		}else{
 			this.rotatePos--;	
+			if(this.rotatePos < 0){
+				this.rotatePos += this.rotationImages.length;
+			}
+			this.originPos = {x: -this.edgeDistance.y1, y: -this.edgeDistance.x2};
 		}
-		this.img = this.rotationImages[Math.abs(this.rotatePos) % this.rotationImages.length];
+		this.img = this.rotationImages[this.rotatePos % this.rotationImages.length];
 		this.imgWidth = this.img.width;
 		this.imgHeight = this.img.height;
-		var delta = Math.abs(this.imgWidth - this.imgHeight) / 2 * this.scale;
-		if(this.imgWidth < this.imgHeight){
-		 	this.originPos.x += delta;
-		 	this.originPos.y -= delta;
-		}else{
-			this.originPos.x -= delta;
-		 	this.originPos.y += delta;
-		}
 		this.draw();
 		// this.trigger('clip.rotate');
 	};
@@ -307,6 +312,13 @@
 		if(this.originPos.y + this.imgHeight * this.scale < this.edge){
 			this.originPos.y = this.edge - this.imgHeight * this.scale;
 		}
+		this.edgeDistance = {
+			x1: Math.abs(this.originPos.x), 
+			y1: Math.abs(this.originPos.y), 
+			x2: this.imgWidth * this.scale - this.edge - Math.abs(this.originPos.x),
+			y2: this.imgHeight * this.scale - this.edge - Math.abs(this.originPos.y)
+		};
+		console.log(this.edgeDistance);
 	}
 	// 旋转
 	function createRotationImage(img, frameEdge){
