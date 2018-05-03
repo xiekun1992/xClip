@@ -294,6 +294,16 @@
 		this.draw();
 		// this.trigger('clip.rotate');
 	};
+	Clip.prototype.zoomTo = function(scale){
+		if (0 < scale && scale <= 1) {
+			var increment = this.scale - scale;
+			this.scale = +scale;
+			this.originPos.x = this.originPos.x + increment * this.imgWidth / 2;
+			this.originPos.y = this.originPos.y + increment * this.imgHeight / 2;	
+			this.draw();
+			console.log('----', this.scale)
+		}
+	};
 	Clip.prototype.zoom = function(isZoomIn, zoomStep){
 		if(!this.enableZoom) return ;
 		var step = zoomStep;
@@ -303,7 +313,7 @@
 		var increment = this.increment * step;
 		if(isZoomIn){
 			if(this.scale + increment > 1){
-				return;
+				increment = 1 - this.scale; // 最大放大到1
 			}
 			this.scale += increment;
 			increment = -increment;
@@ -317,6 +327,7 @@
 		this.originPos.x = this.originPos.x + increment * this.imgWidth / 2;
 		this.originPos.y = this.originPos.y + increment * this.imgHeight / 2;
 		this.draw();
+		console.log('^^^^^^', this.scale)
 	}
 	Clip.prototype.draw = function(){
 		this.edgeExceedCheck();
