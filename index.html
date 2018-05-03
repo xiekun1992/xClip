@@ -10,44 +10,56 @@
 	<link rel="stylesheet" href="src/clip.css">
 </head>
 <body>
+	<input type="file" id="file">
+	<input type="file" id="refresh">
 	<div id="clip"></div>
 	<div id="preview"></div>
 	<img src="" id="img">
 	<input type="range" id="range" min="0" max="10" value="0">
 	<button id="rl" onclick="cc.rotate(1)">l</button>
 	<button id="rr" onclick="cc.rotate(0)">r</button>
-	<div id="s"></div>
-	<div id="sdis"></div>
-	<div id="edis"></div>
+	<button id="cut" onclick="console.log(cc.cut())">cut</button>
+
 	<script src="src/clip.js"></script>
 	<script>
-		var cc = new xClip({
-			container: clip,
-			imagePath: "Tulips.jpg",
-			addOverlay: true,
-			previewImages:[{
-				container: preview, size: 90
-			}]
-		}).init();
-		var scale = 0, rstep;
-		cc.on('clip.init', function(){
-			cc.increment = Math.abs(1 - cc.scale) / 10;
-			range.oninput = function(){
-				cc.zoom(this.value - scale > 0?true: false);
-				scale = this.value;
-			}
-		});
-		cc.on('clip.zoom', function(isZoomIn){
-			// console.log('zoom', isZoomIn)
-			if(isZoomIn){
-				++scale;
-				if(scale > 10) scale = 10;
-			}else{
-				--scale;
-				if(scale <= 0) scale = 0;
-			}
-			range.value = scale;
-		});
+		var cc;
+		refresh.onchange = function(e) {
+			// cc.imagePath = './long.png'
+			cc.refresh({
+				imageFile: e.target.files[0]
+			});
+		};
+		file.onchange = function(e) {
+			// console.log(e.target.files[0])
+			// console.log(URL.createObjectURL(e.target.files[0]));
+			cc = new xClip({
+				container: clip,
+				imageFile: e.target.files[0],
+				addOverlay: true,
+				previewImages:[{
+					container: preview, size: 90
+				}]
+			}).init();
+			var scale = 0, rstep;
+			cc.on('clip.init', function(){
+				cc.increment = Math.abs(1 - cc.scale) / 10;
+				range.oninput = function(){
+					cc.zoom(this.value - scale > 0?true: false);
+					scale = this.value;
+				}
+			});
+			cc.on('clip.zoom', function(isZoomIn){
+				// console.log('zoom', isZoomIn)
+				if(isZoomIn){
+					++scale;
+					if(scale > 10) scale = 10;
+				}else{
+					--scale;
+					if(scale <= 0) scale = 0;
+				}
+				range.value = scale;
+			});
+		}
 		// setInterval(function(){
 		// 	rr.click();
 		// },100);

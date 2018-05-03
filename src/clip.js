@@ -40,20 +40,21 @@
 		Event.call(this);
 
 		var defaultOptions = {
-			container: document.body,
-			imagePath: '',
-			addOverlay: false,
-			previewImages: [],
+			container: document.body, // 初始化裁剪图片组件的父节点
+			imagePath: '', // image url 图片路径，图片路径和图片文件对象二选一即可，否则以图片路径优先
+			imageFile: '', // file object 图片文件对象，可通过input[type=file]添加
+			addOverlay: false, // 圆形阴影遮罩层
+			previewImages: [], // 预览图片配置 {container: domElement, size: previewImageSize}
 			enableMove: true,
 			enableZoom: true,
-			enableRotate: true,
-			increment: 0.01,
+			enableRotate: true, 
+			increment: 0.01, // 缩放时的变化量
 			touchFault: 0 // 红外屏触屏状态，防手指按下不动时图片抖动，建议设置8
 		}
 		options = Object.setPrototypeOf(options, defaultOptions);
 
 		this.container = options.container;
-		this.imagePath = options.imagePath;
+		this.imageFile = options.imageFile;
 		this.addOverlay = options.addOverlay;
 		this.enableMove = options.enableMove;
 		this.enableZoom = options.enableZoom;
@@ -61,6 +62,10 @@
 		this.previewImages = options.previewImages;
 		this.increment = options.increment;
 		this.touchFault = options.touchFault;
+
+		
+		this.imageName = options.imagePath && options.imagePath.split('/').pop() || this.imageFile.name;
+		this.imagePath = options.imagePath || window.URL.createObjectURL(this.imageFile);
 
 		this.edge = options.edge || 300;
 		this.originPos = {x: 0, y: 0};
@@ -84,8 +89,21 @@
 
 		this.ctx = this.mainCanvas.getContext('2d');
 		var overlayCtx = this.overlayCanvas.getContext('2d');
-		// img.src = 'small.png';
-		this.img.src = this.imagePath;
+		this.loadImage(function() {
+			this.addOverlay && this.drawOverlay(overlayCtx, this.edge / 2, this.edge / 2, this.edge / 2);
+			this.trigger('clip.init');
+		}.bind(this));
+		return this;
+	};
+	Clip.prototype.refresh = function(options){
+		this.imageName = options.imagePath && options.imagePath.split('/').pop() || options.imageFile.name;
+		this.imagePath = options.imagePath || window.URL.createObjectURL(options.imageFile);
+
+		this.loadImage(function() {
+			this.trigger('clip.refresh');
+		}.bind(this));
+	};
+	Clip.prototype.loadImage = function(callback){
 		this.img.onload = function(){
 			this.imgWidth = this.img.width;
 			this.imgHeight = this.img.height;
@@ -107,10 +125,9 @@
 			if(this.enableRotate){
 				this.rotationImages = createRotationImage(this.img, this.edge);
 			}
-			this.addOverlay && this.drawOverlay(overlayCtx, this.edge / 2, this.edge / 2, this.edge / 2);
-			this.trigger('clip.init');
+			callback && callback();
 		}.bind(this);
-		return this;
+		this.img.src = this.imagePath;
 	};
 	Clip.prototype.destroy = function(){
 		this.dom.removeChild(this.mainCanvas);
@@ -146,17 +163,17 @@
 	Clip.prototype.initEvent = function(){
 		// 移动交互
 		var mousedownPos, moving = false, scaling = false, scaleDistance = 0, domOffset = mapMousePosition(this.dom), prevPos;
-		console.log(domOffset)
+		// console.log(domOffset)
 		this.dom.addEventListener('mousedown', startMove);
 		this.dom.addEventListener('mousemove', dealMove.bind(this));
 		this.dom.addEventListener('mouseup', cancelMove);
 		this.dom.addEventListener('mouseout', cancelMove);
 		this.dom.addEventListener('mouseleave', cancelMove);
 
-		this.dom.addEventListener('touchstart', startMove);
-		this.dom.addEventListener('touchmove', dealMove.bind(this));
-		this.dom.addEventListener('touchend', cancelMove);
-		this.dom.addEventListener('touchcancel', cancelMove);
+		this.dom.addEventListener('touchstart', startMove, {passive: false});
+		this.dom.addEventListener('touchmove', dealMove.bind(this), {passive: false});
+		this.dom.addEventListener('touchend', cancelMove, {passive: false});
+		this.dom.addEventListener('touchcancel', cancelMove, {passive: false});
 
 		function mapMousePosition(element) {
 			if (element) {
@@ -250,7 +267,7 @@
 			}
 			e.stopPropagation();
 			e.preventDefault();
-		}.bind(this));
+		}.bind(this), {passive: false});
 	};
 	Clip.prototype.move = function(deltaX, deltaY){
 		if(!this.enableMove) return ;
@@ -388,7 +405,10 @@
 		return this;
 	};
 	Clip.prototype.cut = function(){
-		return this.mainCanvas.toDataURL();
+		return {
+			src: this.mainCanvas.toDataURL(),
+			filename: this.imageName
+		}
 	};
 	Clip.prototype.preview = function(){
 		this.previewImages.forEach(function(config){
