@@ -305,7 +305,8 @@
 		}
 	};
 	Clip.prototype.zoom = function(isZoomIn, zoomStep){
-		if(!this.enableZoom) return ;
+		if(!this.enableZoom || this.scale > 1) return ;
+
 		var step = zoomStep;
 		if(!step || step < 0){
 			step = 1;
